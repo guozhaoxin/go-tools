@@ -1,0 +1,5 @@
+fileName="./logs/log.log" # the full path to save logs,with log file name and extension.
+maxSize=0 # max file size of every log file, in megabytes.
+maxBackups=-10 # maximum number of old log files
+maxAge=10 # max days to retain a log file
+compress=true # if the rotated log files should be compressed using gzip, default not

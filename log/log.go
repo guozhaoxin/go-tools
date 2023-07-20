@@ -6,13 +6,13 @@ import (
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"os"
 	"strings"
 )
 
 type Level zapcore.Level
 
 const (
-	// only supports 4 level
 	DebugLevel = (Level)(zap.DebugLevel)
 	InfoLevel = (Level)(zap.InfoLevel)
 	WarnLevel = (Level)(zap.WarnLevel)
@@ -33,17 +33,25 @@ type logFileConfig struct {
 
 func Init(configFile string) error {
 	configFile = strings.TrimSpace(configFile)
+	var err error
 	if len(configFile) == 0 {
-		return initLogWithTerminal()
+		err = initLogToTerminal()
+	}else{
+		err = initLogToFile(configFile)
 	}
-	return initLogToFile(configFile)
-
+	_ = SetLevel(DebugLevel)
+	return err
 }
 
-func initLogWithTerminal() error { // return error to keep consistent with log-file mode.
+func buildLogger(out zapcore.WriteSyncer){
+	core :=zapcore.NewCore(getEncoder(),out, zapcore.DebugLevel)
+	l := zap.New(core)
+	logger = l.Sugar()
+}
+
+func initLogToTerminal() error { // return error to keep consistent with log-file mode.
 	fmt.Println("all log write to terminal")
-	p, _ := zap.NewProduction()
-	logger = p.Sugar()
+	buildLogger(os.Stdout)
 	return nil
 }
 
@@ -55,14 +63,29 @@ func initLogToFile(configFilePath string) error {
 		return err
 	}
 	writeSyncer := getLogWriter(config)
-	encoder := getEncoder()
-	core := zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
-
-	l := zap.New(core)
-	logger = l.Sugar()
-	logger.WithOptions()
+	buildLogger(writeSyncer)
 
 	return nil
+}
+
+func getEncoder() zapcore.Encoder {
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	return zapcore.NewConsoleEncoder(encoderConfig)
+}
+
+func getLogWriter(config *logFileConfig) zapcore.WriteSyncer {
+
+	lumberJackLogger := &lumberjack.Logger{
+		Filename:   config.FileName,
+		MaxSize:    config.MaxSize,
+		MaxBackups: config.MaxBackups,
+		MaxAge:     config.MaxAge,
+		Compress:   config.Compress,
+		LocalTime: true,
+	}
+	return zapcore.AddSync(lumberJackLogger)
 }
 
 func loadConfig(configFile string) (error, *logFileConfig) {
@@ -123,24 +146,18 @@ func GetLevel() Level{
 	return level
 }
 
-func getEncoder() zapcore.Encoder {
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	return zapcore.NewConsoleEncoder(encoderConfig)
-}
-
-func getLogWriter(config *logFileConfig) zapcore.WriteSyncer {
-
-	lumberJackLogger := &lumberjack.Logger{
-		Filename:   config.FileName,
-		MaxSize:    config.MaxSize,
-		MaxBackups: config.MaxBackups,
-		MaxAge:     config.MaxAge,
-		Compress:   config.Compress,
+func GetLevelStr() string{
+	switch level {
+	case DebugLevel:
+		return "debug"
+	case InfoLevel:
+		return "info"
+	case WarnLevel:
+		return "warn"
+	case ErrorLevel:
+		return "error"
 	}
-	return zapcore.AddSync(lumberJackLogger)
-	// todo gzx 需要验证一下，日志是否会追加，还是每次运行时，都新打开一个。
+	return "unknown mode"
 }
 
 func Debug(args ...interface{}){
@@ -189,13 +206,13 @@ func Error(args... interface{}){
 	if level > ErrorLevel{
 		return
 	}
-	logger.Warn(args...)
+	logger.Error(args...)
 }
 
 func Errorf(template string, args ...interface{}){
 	if level > ErrorLevel{
 		return
 	}
-	logger.Warnf(template,args...)
+	logger.Errorf(template,args...)
 }
 
