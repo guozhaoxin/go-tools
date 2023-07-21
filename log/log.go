@@ -23,10 +23,10 @@ var level Level
 var logger *zap.SugaredLogger
 
 type logFileConfig struct {
-	FileName string `toml:"fileName" comment:"the full path for log file with log name ant ext"`
-	MaxSize int `toml:"maxSize" comment:"size threshold to rotate log file, in megabytes"`
-	MaxBackups int `toml:"maxBackups" comment:"maximum number of old log files"`
-	MaxAge int `toml:"maxAge" comment:"max days to retain a log file"`
+	FileName string `toml:"fileName" comment:"the full path for log file with log name ant ext" validate:"required" err:"fileName must given"`
+	MaxSize int `toml:"maxSize" comment:"size threshold to rotate log file, in megabytes" validate:"min=1,max=300" err:"maxSize must in [1,300]"`
+	MaxBackups int `toml:"maxBackups" comment:"maximum number of old log files" validate:"min=1,max=100" err:"maxBackups must in [1,100]"`
+	MaxAge int `toml:"maxAge" comment:"max days to retain a log file" validate:"min=1,max=365" err:"maxAge must in [1,365]"`
 	Compress bool `toml:"compress" comment:"if the rotated log files should be compressed using gzip, default not"`
 }
 
@@ -97,36 +97,13 @@ func loadConfig(configFile string) (error, *logFileConfig) {
 		return err, nil
 	}
 
-	err = checkConfigValid(&config)
+	err = checkConfigValid(config)
 	if err != nil{
 		fmt.Println("config parameters cannot pass check.")
 		return err,nil
 	}
 
 	return err, &config
-}
-
-func checkConfigValid(config *logFileConfig)(error){
-	s := ""
-
-	if len(config.FileName) == 0{
-		s +=  fmt.Sprintf("log file path cannot be empty")
-	}
-	if config.MaxAge < 1{
-		s += fmt.Sprintf("invalid maxAge=%d,cannot less than 1.\n",config.MaxAge)
-	}
-	if config.MaxSize < 1{
-		s += fmt.Sprintf("invalid maxSize=%d,cannot less than 1.\n",config.MaxSize)
-	}
-	if config.MaxBackups < 1{
-		s += fmt.Sprintf("invalid maxBackups=%d,cannot less than 1.\n",config.MaxBackups)
-	}
-
-	if len(s) != 0{
-		return fmt.Errorf("%s",s)
-	}
-
-	return nil
 }
 
 func SetLevel(newLevel Level) error {
