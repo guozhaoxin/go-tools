@@ -193,3 +193,7 @@ func Errorf(template string, args ...interface{}){
 	logger.Errorf(template,args...)
 }
 
+func Flush() error {
+	return logger.Sync()
+}
+

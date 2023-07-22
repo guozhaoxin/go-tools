@@ -142,6 +142,7 @@ func TestLogsWithModeChanged(t *testing.T){
 		count++
 		time.Sleep(time.Second * 3)
 	}
+	fmt.Println(Flush())
 }
 
 func TestWriteToFile(t *testing.T){

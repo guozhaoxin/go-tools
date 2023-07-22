@@ -25,3 +25,8 @@ log.SetLevel(log.ErrorLevel)
 fmt.Println(log.GetLevel())
 fmt.Println(log.GetLevelStr())
 ```
+
+if you want to flush all buffered logs, call Flush():
+```go
+log.Flush()
+```
