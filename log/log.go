@@ -11,15 +11,14 @@ import (
 )
 
 type Level zapcore.Level
-
 const (
 	DebugLevel = (Level)(zap.DebugLevel)
 	InfoLevel = (Level)(zap.InfoLevel)
 	WarnLevel = (Level)(zap.WarnLevel)
 	ErrorLevel = (Level)(zap.ErrorLevel)
 )
-
 var level Level
+
 var logger *zap.SugaredLogger
 
 type logFileConfig struct {
