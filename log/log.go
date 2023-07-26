@@ -17,7 +17,8 @@ const (
 	WarnLevel = (Level)(zap.WarnLevel)
 	ErrorLevel = (Level)(zap.ErrorLevel)
 )
-var level Level
+
+var zapLevel = zap.NewAtomicLevel()
 
 var logger *zap.SugaredLogger
 
@@ -38,12 +39,16 @@ func Init(configFile string) error {
 	}else{
 		err = initLogToFile(configFile)
 	}
+	if err != nil{
+		return err
+	}
+
 	_ = SetLevel(DebugLevel)
-	return err
+	return nil
 }
 
 func buildLogger(out zapcore.WriteSyncer){
-	core :=zapcore.NewCore(getEncoder(),out, zapcore.DebugLevel)
+	core :=zapcore.NewCore(getEncoder(),out, zapLevel)
 	l := zap.New(core)
 	logger = l.Sugar()
 }
@@ -107,23 +112,24 @@ func loadConfig(configFile string) (error, *logFileConfig) {
 
 func SetLevel(newLevel Level) error {
 	if newLevel < DebugLevel {
-		return fmt.Errorf("level cannot less than %d",DebugLevel)
+		return fmt.Errorf("zapLevel cannot less than %d",DebugLevel)
 	}
 
 	if newLevel > ErrorLevel{
-		return fmt.Errorf("level cannot more than %d",ErrorLevel)
+		return fmt.Errorf("zapLevel cannot more than %d",ErrorLevel)
 	}
 
-	level = newLevel
+	zapLevel.SetLevel((zapcore.Level(newLevel)))
 	return nil
 }
 
 func GetLevel() Level{
-	return level
+	return Level(zapLevel.Level())
 }
 
 func GetLevelStr() string{
-	switch level {
+	currentLevel := GetLevel()
+	switch currentLevel {
 	case DebugLevel:
 		return "debug"
 	case InfoLevel:
@@ -137,58 +143,34 @@ func GetLevelStr() string{
 }
 
 func Debug(args ...interface{}){
-	if level > DebugLevel{
-		return
-	}
 	logger.Debug(args...)
 }
 
 func Debugf(template string, args ...interface{}){
-	if level > DebugLevel{
-		return
-	}
 	logger.Debugf(template,args...)
 }
 
 func Info(args ...interface{}){
-	if level > InfoLevel{
-		return
-	}
 	logger.Info(args...)
 }
 
 func Infof(template string, args ...interface{}){
-	if level > InfoLevel{
-		return
-	}
 	logger.Infof(template,args...)
 }
 
 func Warn(args... interface{}){
-	if level > WarnLevel{
-		return
-	}
 	logger.Warn(args...)
 }
 
 func Warnf(template string, args ...interface{}){
-	if level > WarnLevel{
-		return
-	}
 	logger.Warnf(template,args...)
 }
 
 func Error(args... interface{}){
-	if level > ErrorLevel{
-		return
-	}
 	logger.Error(args...)
 }
 
 func Errorf(template string, args ...interface{}){
-	if level > ErrorLevel{
-		return
-	}
 	logger.Errorf(template,args...)
 }
 
