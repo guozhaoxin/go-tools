@@ -51,6 +51,7 @@ func buildLogger(out zapcore.WriteSyncer){
 	core :=zapcore.NewCore(getEncoder(),out, zapLevel)
 	l := zap.New(core)
 	logger = l.Sugar()
+	logger = logger.WithOptions(zap.AddCaller(),zap.AddCallerSkip(1)) // here you can add more option,such record stacktrace
 }
 
 func initLogToTerminal() error { // return error to keep consistent with log-file mode.
@@ -76,6 +77,9 @@ func getEncoder() zapcore.Encoder {
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	encoderConfig.CallerKey = "caller"
+	encoderConfig.LevelKey = "level"
+	encoderConfig.StacktraceKey = "trace"
 	return zapcore.NewConsoleEncoder(encoderConfig)
 }
 
